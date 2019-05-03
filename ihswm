@@ -1,0 +1,70 @@
+#!/bin/bash
+
+IHSWM_DIR=~/.ihswm
+
+# Generate the directories
+[ -d $IHSWM_DIR ] || mkdir -p $IHSWM_DIR
+
+
+function usage() {
+	echo -e "Usage:"
+	echo -e "\t'ihswm' - to view this help menu."
+	echo -e "\t'ihswm set <name>' - set the .xinitrc"
+	echo -e "\t'ihswm add <name>' - add the current .xinitrc "
+	echo -e "\t'ihswm add <name> <file>' - add <file> as the .xinitrc for config <name>"
+	echo -e "\t'ihswm del <name>' - remove the .xinitrc"
+	echo -e "\t'ihswm list' - list all configurations"
+	echo -e "\t'ihswm new <name>' - create a new configuration with that name"
+	echo -e "\t'ihswm show <name>' - show the configuration"
+}
+
+if [ "$#" -eq 0 ]
+then
+	usage; exit 0;
+fi
+
+case "$1" in
+	add)
+		if [ -z "$3" ]
+		then
+			CONFIG=~/.xinitrc;
+		else
+			CONFIG="$3"
+		fi
+		cp "$CONFIG" "$IHSWM_DIR/$2"
+		;;
+	del)
+		read -rsn1 -p "Are you sure? This cannot be undone. [y/n]: " yn
+		case $yn in
+			[Yy]*)
+				rm -rf "$IHSWM_DIR/$2";;
+			[Nn]*)
+				echo "Ok, you can keep it"
+				exit 1;;
+		esac
+		;;
+	list)
+		[ -f $IHSWM_DIR/.current ] && echo "Currently on: " $(cat $IHSWM_DIR/.current)
+		echo "Available configurations:"
+		find $IHSWM_DIR -type f ! -name '.*' -printf "\t- %f\n" | sort
+		;;
+	new)
+		$EDITOR "$IHSWM_DIR/$2"
+		;;
+	set)
+		if [ ! -f "$IHSWM_DIR/$2" ]
+		then echo "Configuration $2 not found"; exit 1;
+		fi
+		rm -f ~/.xinitrc
+		ln -s "$IHSWM_DIR/$2" ~/.xinitrc
+		echo "$2" > "$IHSWM_DIR/.current"
+		;;
+	show)
+		if [ -f "$IHSWM_DIR/$2" ]
+		then
+			cat "$IHSWM_DIR/$2";
+		else
+			echo "Configuration $2 does not exist."
+			exit 1
+		fi
+esac
